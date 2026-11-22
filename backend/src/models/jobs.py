@@ -50,3 +50,14 @@ class Delivery(Base):
     state: Mapped[str] = mapped_column(String(20))
     detail: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(default=now)
+
+class PatrolPlan(Base):
+    __tablename__ = 'patrol_plans'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey('runs.id'), index=True)
+    inputs: Mapped[dict] = mapped_column(JSON)
+    plan: Mapped[dict] = mapped_column(JSON)
+    author: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(default=now)
+

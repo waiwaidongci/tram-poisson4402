@@ -27,3 +27,10 @@ def schedule(item):
 def delivery(item):
     return {'id': item.id, 'run_id': item.run_id, 'recipient': item.recipient,
             'state': item.state, 'detail': item.detail, 'created_at': iso(item.created_at)}
+
+
+def patrol(item):
+    if not item:
+        return None
+    return {'id': item.id, 'run_id': item.run_id, 'author': item.author,
+            'created_at': iso(item.created_at), 'inputs': item.inputs, 'plan': item.plan}

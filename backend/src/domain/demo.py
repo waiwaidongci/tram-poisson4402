@@ -39,3 +39,56 @@ def demo_rows():
                     "count": _poisson(rng, exposure * rate),
                 })
     return rows
+
+
+# The signal desk names the four crossings after its own cabinet points, so the
+# demo crosswalk has to translate them to the ledger's 道路 / 路口 names.
+_CROSSWALK = (
+    ("湾1号点", "港湾路", "货栈街口"),
+    ("湾2号点", "港湾路", "渡口街口"),
+    ("科3号点", "科创大道", "智造街口"),
+    ("科4号点", "科创大道", "东环街口"),
+)
+
+# (signal point, shift, entry start, entry end) — the morning windows overlap
+# on 港湾路, so no single group can guard both.
+_SIGNAL_WINDOWS = (
+    ("湾1号点", "平峰", "08:00", "10:00"),
+    ("湾2号点", "平峰", "09:00", "11:00"),
+    ("科3号点", "平峰", "10:30", "12:30"),
+    ("科4号点", "平峰", "11:00", "13:00"),
+    ("湾1号点", "高峰", "17:00", "19:00"),
+    ("湾2号点", "高峰", "18:00", "20:00"),
+    ("科3号点", "高峰", "20:00", "22:00"),
+    ("科4号点", "高峰", "20:30", "22:30"),
+)
+
+_GROUPS = (
+    ("甲组", "湾1号点", "07:00", "15:00", 30),
+    ("乙组", "湾2号点", "16:30", "23:59", 30),
+    ("丙组", "科4号点", "07:00", "13:00", 30),
+)
+
+
+def demo_patrol(days):
+    """Cross-system feed for the given holdout days, ready to paste as JSON."""
+    return {
+        "crosswalk": [
+            {"signal_name": name, "road": road, "intersection": intersection}
+            for name, road, intersection in _CROSSWALK
+        ],
+        "signal": [
+            {"signal_name": name, "date": day, "shift": shift, "start": start, "end": end}
+            for day in days
+            for name, shift, start, end in _SIGNAL_WINDOWS
+        ],
+        "groups": [
+            {"name": name, "start": start, "shift_start": shift_start,
+             "shift_end": shift_end, "transfer_minutes": transfer}
+            for name, start, shift_start, shift_end, transfer in _GROUPS
+        ],
+        "fixed": [
+            {"group": "甲组", "signal_name": "湾2号点", "date": days[0], "shift": "平峰"},
+        ],
+    }
+

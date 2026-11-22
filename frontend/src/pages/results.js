@@ -7,6 +7,7 @@ import {handler, poll} from '../hooks/action.js';
 import {workspace} from '../stores/workspace.js';
 import {button, el, h, link, p} from '../utils/dom.js';
 import {date, value} from '../utils/format.js';
+import {patrolPanel} from './patrol.js';
 
 export async function results(route, refresh) {
   const {spec,runs,datasets} = workspace;
@@ -31,13 +32,15 @@ export async function results(route, refresh) {
     el('select',{id:'run-picker',onChange:event=>{location.hash=`#results/${event.target.value}`;}},
       (runs.some(item=>item.id===job.id) ? runs : [job,...runs]).map(item=>el('option',{value:item.id,selected:item.id===job.id},item.name))));
   const result = job.result;
+  const saved = result && job.status === 'complete' ? await workspace.getPatrol(job.id) : null;
   const analysis = result ? el('section',{class:'analysis','data-testid':'analysis-complete'},
     el('div',{class:'result-head'},p(job.name,'eyeline'),h(2,result.headline),p(result.note,'intro-copy'),
       el('div',{class:'actions'},pill(STATUS[job.status],job.status),download,message)),
     metrics(result.metrics),
     result.charts.map(plot),
-    (result.sections || []).map(item=>panel(item.title,p(item.text))),
-    result.tables.map(item=>panel(item.title,table(item.columns,item.rows,{caption:item.title}))))
+    result.sections.map(item=>panel(item.title,p(item.text))),
+    result.tables.map(item=>panel(item.title,table(item.columns,item.rows,{caption:item.title}))),
+    await patrolPanel(job, saved, refresh))
     : panel(job.name,pill(STATUS[job.status],job.status),p(job.error,'feedback'),link('返回调整参数',`#run/${job.dataset_id}`,{class:'quiet'}));
   const inputs = spec.params.map(param=>el('div',{},el('dt',{},param.label),el('dd',{},value(job.params[param.key]))));
   return el('div',{},el('div',{class:'two-col'},el('div',{class:'wide-panel'},analysis),

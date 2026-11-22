@@ -153,7 +153,12 @@ def _table(title, columns, rows):
     return {"title": title, "columns": [{"key": key, "label": label} for key, label in columns], "rows": rows}
 
 
-def analyze(rows, normalized_params):
+def project(rows, normalized_params):
+    """Fit the training days and return the per-window holdout predictions.
+
+    The patrol planner reuses exactly these windows, so the fit and prediction
+    logic live in one place instead of being recomputed with different rules.
+    """
     readings = validate_rows(rows)
     if set(normalized_params) - {field["key"] for field in SPEC["params"]}:
         raise ValueError("存在未知运行参数")
@@ -178,11 +183,28 @@ def analyze(rows, normalized_params):
             "model_deviance": _deviance(row["count"], expected),
             "baseline_deviance": _deviance(row["count"], baseline),
         })
+    return {
+        "readings": readings, "days": days, "params": params, "cutoff": cutoff,
+        "holdout_days": holdout_days, "training": training, "coefficients": coefficients,
+        "baseline_rate": baseline_rate, "seen": seen, "windows": windows,
+    }
+
+
+def analyze(rows, normalized_params):
+    projected = project(rows, normalized_params)
+    days = projected["days"]
+    params = projected["params"]
+    training = projected["training"]
+    windows = projected["windows"]
+    coefficients = projected["coefficients"]
+    baseline_rate = projected["baseline_rate"]
+    cutoff = projected["cutoff"]
+    holdout_days = projected["holdout_days"]
+    unseen_count = sum(row["unseen"] for row in windows)
+    threshold = params["severity_rate"]
     mean_model = fsum(row["model_deviance"] for row in windows) / len(windows)
     mean_baseline = fsum(row["baseline_deviance"] for row in windows) / len(windows)
     better = mean_model < mean_baseline and not isclose(mean_model, mean_baseline, rel_tol=1e-12, abs_tol=1e-12)
-    unseen_count = sum(row["unseen"] for row in windows)
-    threshold = params["severity_rate"]
     roads = _planning(windows, ("road",), threshold)
     intersections = _planning(windows, ("road", "intersection"), threshold)
     focus = intersections[0]

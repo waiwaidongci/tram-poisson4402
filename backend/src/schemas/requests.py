@@ -28,3 +28,9 @@ class ScheduleRequest(RunRequest):
     recipient: str = Field(min_length=1, max_length=100)
     first_at: datetime
     repeat_daily: bool = False
+
+class PatrolRequest(Request):
+    crosswalk: list[dict] = Field(default_factory=list, max_length=5000)
+    signal: list[dict] = Field(default_factory=list, max_length=5000)
+    groups: list[dict] = Field(default_factory=list, max_length=5000)
+    fixed: list[dict] = Field(default_factory=list, max_length=5000)
